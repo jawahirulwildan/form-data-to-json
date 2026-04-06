@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form data Tools</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 700px; margin: 0 auto; background-color: #f4f4f9; }
+        textarea { width: 100%; height: 120px; margin-bottom: 10px; padding: 12px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-family: monospace; font-size: 14px; }
+        
+        .btn-group { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+        button { padding: 10px 20px; cursor: pointer; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; transition: background 0.2s; }
+        
+        button.btn-keys { background-color: #007bff; } /* Biru */
+        button.btn-keys:hover { background-color: #0056b3; }
+        
+        button.btn-json { background-color: #6610f2; } /* Ungu */
+        button.btn-json:hover { background-color: #520dc2; }
+        
+        button#copyBtn { background-color: #28a745; display: none; margin-left: auto; } /* Hijau */
+        button#copyBtn:hover { background-color: #218838; }
+
+        label { font-weight: bold; display: block; margin-top: 15px; margin-bottom: 5px; color: #333; }
+        .hint { font-size: 0.85em; color: #666; font-weight: normal; margin-left: 5px; }
+    </style>
+</head>
+<body>
+
+    <label>1. Paste Query String Disini:</label>
+    <textarea id="inputStr" placeholder="Contoh: no_medicalrecord=123&nama=budi&status=oke..."></textarea>
+    
+    <div class="btn-group">
+        <button class="btn-keys" onclick="prosesKeys()">Create DTO</button>
+        <button class="btn-json" onclick="prosesJson()">Create Payload</button>
+        <button id="copyBtn" onclick="copyHasil()">Copy Hasil</button>
+    </div>
+
+    <label>2. Hasil Output <span class="hint">(Urutan sesuai input)</span>:</label>
+    <textarea id="outputStr" readonly placeholder="Hasil akan muncul disini..."></textarea>
+
+    <script>
+        function getInput() {
+            const val = document.getElementById('inputStr').value.trim();
+            if (!val) {
+                alert("Input kosong!");
+                return null;
+            }
+            return val;
+        }
+
+        function setOutput(text) {
+            const outputBox = document.getElementById('outputStr');
+            const copyBtn = document.getElementById('copyBtn');
+            outputBox.value = text;
+            copyBtn.style.display = "block";
+        }
+
+        // --- FITUR 1: AMBIL KEYS SAJA ---
+        function prosesKeys() {
+            const input = getInput();
+            if (!input) return;
+
+            try {
+                const params = new URLSearchParams(input);
+                let hasil = "";
+                
+                for (const key of params.keys()) {
+                    hasil += key + ":\n"; 
+                }
+                setOutput(hasil);
+            } catch (e) {
+                alert("Format error!");
+            }
+        }
+
+        // --- FITUR 2: CONVERT TO JSON (URUT) ---
+        function prosesJson() {
+            const input = getInput();
+            if (!input) return;
+
+            try {
+                const params = new URLSearchParams(input);
+                const obj = {};
+
+                // Loop manual untuk memastikan urutan insersei (insertion order) terjaga
+                params.forEach((value, key) => {
+                    // Cek jika key sudah ada (untuk handle array/duplicate keys)
+                    // Jika ingin simpel (overwrite), cukup: obj[key] = value;
+                    if (obj.hasOwnProperty(key)) {
+                        if (!Array.isArray(obj[key])) {
+                            obj[key] = [obj[key]]; // Ubah jadi array
+                        }
+                        obj[key].push(value);
+                    } else {
+                        obj[key] = value;
+                    }
+                });
+
+                // JSON.stringify mempertahankan urutan properti untuk string keys
+                const jsonStr = JSON.stringify(obj, null, 4); 
+                setOutput(jsonStr);
+
+            } catch (e) {
+                alert("Gagal convert ke JSON!");
+                console.error(e);
+            }
+        }
+
+        // --- FITUR COPY ---
+        function copyHasil() {
+            const outputBox = document.getElementById('outputStr');
+            outputBox.select();
+            outputBox.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(outputBox.value).then(() => {
+                const originalText = document.getElementById('copyBtn').innerText;
+                document.getElementById('copyBtn').innerText = "Copied!";
+                setTimeout(() => {
+                    document.getElementById('copyBtn').innerText = originalText;
+                }, 1500);
+            });
+        }
+    </script>
+</body>
+</html>
