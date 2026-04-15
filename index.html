@@ -18,7 +18,7 @@ Provided "AS IS" without any warranties.
     <title>Form data Tools</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 700px; margin: 0 auto; background-color: #f4f4f9; }
-        textarea { width: 100%; height: 160px; margin-bottom: 10px; padding: 12px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-family: monospace; font-size: 14px; }
+        textarea { width: 100%; height: 120px; margin-bottom: 10px; padding: 12px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-family: monospace; font-size: 14px; }
         
         .btn-group { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
         button { padding: 10px 20px; cursor: pointer; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; transition: background 0.2s; }
@@ -30,7 +30,7 @@ Provided "AS IS" without any warranties.
         button.btn-json:hover { background-color: #520dc2; }
 
         button.btn-query { background-color: #fd7e14; } /* Oranye */
-        button.btn-query:hover { background-color: #e86e10; }
+        button.btn-query:hover { background-color: #e86e04; }
         
         button#copyBtn { background-color: #28a745; display: none; margin-left: auto; } /* Hijau */
         button#copyBtn:hover { background-color: #218838; }
@@ -42,12 +42,12 @@ Provided "AS IS" without any warranties.
 <body>
 
     <label>1. Paste Form Data Disini:</label>
-    <textarea id="inputStr" placeholder="Contoh: page=1&rows=10..."></textarea>
+    <textarea id="inputStr" placeholder="Contoh: no_medicalrecord=123&nama=budi&status=oke..."></textarea>
     
     <div class="btn-group">
         <button class="btn-keys" onclick="prosesKeys()">Create DTO</button>
-        <button class="btn-json" onclick="prosesJson()">Create Payload</button>
-        <button class="btn-query" onclick="prosesQuery()">Create req.query</button>
+        <button class="btn-json" onclick="prosesJson()">Create Payload (JSON)</button>
+        <button class="btn-query" onclick="prosesQueryParams()">Create Query Params</button>
         <button id="copyBtn" onclick="copyHasil()">Copy Hasil</button>
     </div>
 
@@ -98,10 +98,12 @@ Provided "AS IS" without any warranties.
                 const params = new URLSearchParams(input);
                 const obj = {};
 
+                // Loop manual untuk memastikan urutan insersi (insertion order) terjaga
                 params.forEach((value, key) => {
+                    // Cek jika key sudah ada (untuk handle array/duplicate keys)
                     if (obj.hasOwnProperty(key)) {
                         if (!Array.isArray(obj[key])) {
-                            obj[key] = [obj[key]];
+                            obj[key] = [obj[key]]; // Ubah jadi array
                         }
                         obj[key].push(value);
                     } else {
@@ -109,6 +111,7 @@ Provided "AS IS" without any warranties.
                     }
                 });
 
+                // JSON.stringify mempertahankan urutan properti untuk string keys
                 const jsonStr = JSON.stringify(obj, null, 4); 
                 setOutput(jsonStr);
 
@@ -118,35 +121,21 @@ Provided "AS IS" without any warranties.
             }
         }
 
-        // --- FITUR 3: CONVERT TO REQ.QUERY ---
-        function prosesQuery() {
+        // --- FITUR 3: CONVERT TO QUERY PARAMS (key:value) ---
+        function prosesQueryParams() {
             const input = getInput();
             if (!input) return;
 
             try {
                 const params = new URLSearchParams(input);
-                const keys = [];
+                let hasil = "";
                 
-                for (const key of params.keys()) {
-                    // Hindari duplikasi key jika ada array param
-                    if (!keys.includes(key)) keys.push(key); 
-                }
-
-                if (keys.length === 0) {
-                    setOutput("// Tidak ada parameter yang ditemukan");
-                    return;
-                }
-
-                // Format 1: Destructuring (Lebih rapi untuk ES6)
-                let hasil = `const { ${keys.join(', ')} } = req.query;\n\n`;
-
-                // Format 2: Deklarasi per baris
-                hasil += `// --- ATAU PER BARIS ---\n`;
-                keys.forEach(key => {
-                    hasil += `const ${key} = req.query.${key};\n`;
+                // Loop untuk merangkai key:value baris demi baris
+                params.forEach((value, key) => {
+                    hasil += key + ":" + value + "\n";
                 });
-
-                setOutput(hasil);
+                
+                setOutput(hasil.trim()); // trim() untuk menghilangkan newline ekstra di akhir
             } catch (e) {
                 alert("Format error!");
                 console.error(e);
